@@ -52,27 +52,21 @@ var Config = {
         spawnMax: 5,
         types: [{
                 id: "air",
-                // vx: OBSTACLE_SPEED
             },
             {
                 id: "earth",
-                // vx: OBSTACLE_SPEED
             },
             {
                 id: "fire",
-                // vx: OBSTACLE_SPEED
             },
             {
                 id: "life",
-                // vx: OBSTACLE_SPEED
             },
             {
                 id: "toxic",
-                // vx: OBSTACLE_SPEED
             },
             {
                 id: "water",
-                // vx: OBSTACLE_SPEED
             }
         ]
     }

@@ -20,6 +20,8 @@ class GameScene extends Phaser.Scene {
         this.setToxicCards = new Set()
         this.setWaterCards = new Set()
         this.setItemCards = new Set()
+        this.playerAttack = 0
+        this.playerDefense = 0
     }
     constructor() {
         super({
@@ -27,7 +29,7 @@ class GameScene extends Phaser.Scene {
             physics: {
                 default: 'arcade',
                 arcade: {
-                    debug: true,
+                    // debug: true,
                     gravity: {
                         y: 0
                     }
@@ -44,6 +46,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('toxic', 'assets/images/toxic.png')
         this.load.image('water', 'assets/images/water.png')
         this.load.image('item', 'assets/images/item.png')
+        this.load.image('attack', 'assets/images/attack.png')
         // firework images
         this.load.image('blue', 'assets/particles/blue_explode.png')
         this.load.image('green', 'assets/particles/green_explode.png')
@@ -88,26 +91,26 @@ class GameScene extends Phaser.Scene {
                     // console.log("item: " + data.cards[i].set)
                     switch (data.cards[i].set) {
                         case "AIR":
-                            app.setAirCards.add(data.cards[i])
-                            break;
+                        app.setAirCards.add(data.cards[i])
+                        break;
                         case "EARTH":
-                            app.setEarthCards.add(data.cards[i])
-                            break;
+                        app.setEarthCards.add(data.cards[i])
+                        break;
                         case "FIRE":
-                            app.setFireCards.add(data.cards[i])
-                            break;
+                        app.setFireCards.add(data.cards[i])
+                        break;
                         case "LIFE":
-                            app.setLifeCards.add(data.cards[i])
-                            break;
+                        app.setLifeCards.add(data.cards[i])
+                        break;
                         case "TOXIC":
-                            app.setToxicCards.add(data.cards[i])
-                            break;
+                        app.setToxicCards.add(data.cards[i])
+                        break;
                         case "WATER":
-                            app.setWaterCards.add(data.cards[i])
-                            break;
+                        app.setWaterCards.add(data.cards[i])
+                        break;
                         case "ITEM":
-                            app.setItemCards.add(data.cards[i])
-                            break;
+                        app.setItemCards.add(data.cards[i])
+                        break;
                     }
                 }
             } else {
@@ -156,17 +159,14 @@ class GameScene extends Phaser.Scene {
         })
         this.add.image(0, 0, 'background').setOrigin(0, 0).setDisplaySize(Config.BG_WIDTH / 2, Config.BG_HEIGHT)
         this.add.image(Config.BG_WIDTH / 2, 0, 'background').setOrigin(0, 0).setDisplaySize(Config.BG_WIDTH / 2, Config.BG_HEIGHT)
-        this.lifeTextView = this.add.text(50, 20, 'Life: ' + this.lifePoint, {
-            font: '32px Courier bold',
-            fill: '#ffffff'
-        })
-        this.gooTextView = this.add.text(50, 70, 'Goo: 0', {
-            font: '32px Courier bold',
-            fill: '#ffffff'
-        })
-        this.bgSound = this.sound.add('bg_music', {
-            loop: 'true'
-        })
+        var style = {font: '24px Courier bold', fill: '#ffffff'}
+
+        this.lifeTextView = this.add.text(50, 20, 'Life: ' + this.lifePoint, style)
+        this.gooTextView = this.add.text(50, 70, 'Goo: 0', style)
+        this.attackTextView = this.add.text(370, 20, 'Attack: 0', style)
+        this.defenseTextView = this.add.text(370, 70, 'Defense: 0', style)
+
+        this.bgSound = this.sound.add('bg_music', {loop: 'true'})
         this.bgSound.play()
     }
     initPlayer() {
@@ -178,7 +178,7 @@ class GameScene extends Phaser.Scene {
             app.playerScale = Config.PLAYER_SCALE // reset scale
             app.readyToMove = true
             app.gooPoint++
-                app.gooTextView.setText("Goo: " + app.gooPoint)
+            app.gooTextView.setText("Goo: " + app.gooPoint)
         })
         this.input.on('pointerdown', () => this.playerMove(this.player.y == Config.PLAYER_Y_TOP))
     }
@@ -187,15 +187,19 @@ class GameScene extends Phaser.Scene {
         this.obstacles.enableBody = true
         this.physics.add.overlap(this.player, this.obstacles, this.playerHitObstacle, null, this)
     }
-    playerHitObstacle(player, obstacle) {
-        this.destroyObstacle(obstacle)
-        if (this.player.id != obstacle.id) {
+    playerHitObstacle(player, container) {
+        this.destroyObstacle(container)
+        if (this.player.id != container.id) {
             this.lifePoint -= 10
             this.lifeTextView.setText('Life: ' + this.lifePoint)
-            this.explodeEffect(obstacle, false)
+            this.explodeEffect(container, false)
             this.sound.play('break')
         } else {
             console.log("Got the card!")
+            this.playerAttack += container.damage
+            this.attackTextView.setText("Attack: " + this.playerAttack)
+            this.playerDefense += container.health
+            this.defenseTextView.setText("Defense: " + this.playerDefense)
             this.sound.play('addscore')
         }
         if (this.lifePoint == 0) {
@@ -223,7 +227,7 @@ class GameScene extends Phaser.Scene {
     }
     playerMove(isMoveDown) {
         if (this.readyToMove == false) return
-        this.readyToMove = false
+            this.readyToMove = false
         this.sound.play('touch')
         this.player.moveTo.moveTo(Config.PLAYER_X / 2, isMoveDown ? Config.PLAYER_Y_DOWN : Config.PLAYER_Y_TOP)
     }
@@ -237,13 +241,18 @@ class GameScene extends Phaser.Scene {
         var card = this.randomCard(type.id)
 
         var damage = this.add.text(-25, 25, "A: " + card.damage, {fontFamily: 'Arial',color: '#ffffff',align: 'center'}).setFontSize(18).setOrigin(0.5, 0.5)
-        var health = this.add.text(25, 25, "D: " + card.health, {fontFamily: 'Arial',color: '#ffffff',align: 'center'}).setFontSize(18).setOrigin(0.5, 0.5)
-        var cost = this.add.text(25, -25, "C: " + card.cost, {fontFamily: 'Arial',color: '#ffffff',align: 'center'}).setFontSize(18).setOrigin(0.5, 0.5)
+        var cost = this.add.text(25, 25, "D: " + card.health, {fontFamily: 'Arial',color: '#ffffff',align: 'center'}).setFontSize(18).setOrigin(0.5, 0.5)
+        var health = this.add.text(25, -25, "C: " + card.cost, {fontFamily: 'Arial',color: '#ffffff',align: 'center'}).setFontSize(18).setOrigin(0.5, 0.5)
 
         var container = this.add.container(x, y).setSize(55, 55)        
         container.add([obstacle, damage, health, cost])
         container.id = type.id
+        container.damage = card.damage
+        container.health = card.health
+        container.cost = card.cost
+
         container.obstacleDir = x < 0 ? "left" : "right"
+        this.physics.world.enable(container)        
         container.body.velocity.x = x < 0 ? speed : -speed
 
         // Create follow emitter
@@ -264,65 +273,65 @@ class GameScene extends Phaser.Scene {
         var card, index, count
         switch (type) {
             case "air":
-                index = Phaser.Math.Between(0, this.setAirCards.size - 1)
-                count = 0
-                for (var entry of this.setAirCards.entries()) {
-                    if (count++ == index) {
-                        card = entry[0]
-                        break
-                    }
+            index = Phaser.Math.Between(0, this.setAirCards.size - 1)
+            count = 0
+            for (var entry of this.setAirCards.entries()) {
+                if (count++ == index) {
+                    card = entry[0]
+                    break
                 }
-                break;
+            }
+            break;
             case "earth":
-                index = Phaser.Math.Between(0, this.setEarthCards.size - 1)
-                count = 0
-                for (var entry of this.setEarthCards.entries()) {
-                    if (count++ == index) {
-                        card = entry[0]
-                        break
-                    }
+            index = Phaser.Math.Between(0, this.setEarthCards.size - 1)
+            count = 0
+            for (var entry of this.setEarthCards.entries()) {
+                if (count++ == index) {
+                    card = entry[0]
+                    break
                 }
-                break;
+            }
+            break;
             case "fire":
-                index = Phaser.Math.Between(0, this.setFireCards.size - 1)
-                count = 0
-                for (var entry of this.setFireCards.entries()) {
-                    if (count++ == index) {
-                        card = entry[0]
-                        break
-                    }
+            index = Phaser.Math.Between(0, this.setFireCards.size - 1)
+            count = 0
+            for (var entry of this.setFireCards.entries()) {
+                if (count++ == index) {
+                    card = entry[0]
+                    break
                 }
-                break;
+            }
+            break;
             case "life":
-                index = Phaser.Math.Between(0, this.setLifeCards.size - 1)
-                count = 0
-                for (var entry of this.setLifeCards.entries()) {
-                    if (count++ == index) {
-                        card = entry[0]
-                        break
-                    }
+            index = Phaser.Math.Between(0, this.setLifeCards.size - 1)
+            count = 0
+            for (var entry of this.setLifeCards.entries()) {
+                if (count++ == index) {
+                    card = entry[0]
+                    break
                 }
-                break;
+            }
+            break;
             case "toxic":
-                index = Phaser.Math.Between(0, this.setToxicCards.size - 1)
-                count = 0
-                for (var entry of this.setToxicCards.entries()) {
-                    if (count++ == index) {
-                        card = entry[0]
-                        break
-                    }
+            index = Phaser.Math.Between(0, this.setToxicCards.size - 1)
+            count = 0
+            for (var entry of this.setToxicCards.entries()) {
+                if (count++ == index) {
+                    card = entry[0]
+                    break
                 }
-                break;
+            }
+            break;
             case "water":
-                index = Phaser.Math.Between(0, this.setWaterCards.size - 1)
-                count = 0
-                for (var entry of this.setWaterCards.entries()) {
-                    if (count++ == index) {
-                        card = entry[0]
-                        break
-                    }
+            index = Phaser.Math.Between(0, this.setWaterCards.size - 1)
+            count = 0
+            for (var entry of this.setWaterCards.entries()) {
+                if (count++ == index) {
+                    card = entry[0]
+                    break
                 }
-                break;
+            }
+            break;
                 // case "item":
                 //     index = Phaser.Math.Between(0, this.setItemCards.size - 1)
                 //     for(var entry of this.setItemCards.entries()){
@@ -332,13 +341,13 @@ class GameScene extends Phaser.Scene {
                 //         }
                 //     }
                 //     break;
+            }
+            return card
         }
-        return card
-    }
-    update(time, delta) {
+        update(time, delta) {
         // Update camera - debug purpose
         if (this.physics.config.debug) this.controls.update(delta)
-        if (!this.isGameOver && this.setAirCards.size > 0) {
+            if (!this.isGameOver && this.setAirCards.size > 0) {
             // update Player
             this.updatePlayer()
             // update Obstacle
@@ -347,11 +356,11 @@ class GameScene extends Phaser.Scene {
     }
     updatePlayer() {
         // Scale player by time
-        // if ((this.player.y == Config.PLAYER_Y_TOP || this.player.y == Config.PLAYER_Y_DOWN) && this.playerScale != -1) {
-        //     this.playerScale += 0.0025
-        //     this.playerScale = this.playerScale > Config.PLAYER_MAX_SCALE ? Config.PLAYER_MAX_SCALE : this.playerScale
-        //     this.player.setScale(this.playerScale)
-        // }
+        if ((this.player.y == Config.PLAYER_Y_TOP || this.player.y == Config.PLAYER_Y_DOWN) && this.playerScale != -1) {
+            this.playerScale += 0.005
+            this.playerScale = this.playerScale > Config.PLAYER_MAX_SCALE ? Config.PLAYER_MAX_SCALE : this.playerScale
+            this.player.setScale(this.playerScale)
+        }
         // Destroy player when player is too big
         if (this.playerScale == Config.PLAYER_MAX_SCALE && this.isGameOver == false) {
             //destroy old obstacles
@@ -377,12 +386,11 @@ class GameScene extends Phaser.Scene {
             }
         }
         if (this.obstacles.children.entries.length > 0) {
-            this.obstacles.children.iterate(function(container) {
+            this.obstacles.children.iterate(function(obstacle) {
                 // Left obstacle collide right boundary or right obstacle collide left boundary
-                var obstacle = container.list[0]
                 if (obstacle && ((obstacle.body.x > Config.BG_WIDTH && obstacle.obstacleDir == "left") || (obstacle.body.x < 0 && obstacle.obstacleDir == "right"))) {
                     app.sound.play("break")
-                    app.destroyObstacle(container)
+                    app.destroyObstacle(obstacle)
                     app.explodeEffect(obstacle, false)
                 }
             })
