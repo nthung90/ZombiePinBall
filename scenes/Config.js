@@ -69,6 +69,43 @@ var Config = {
                 id: "water",
             }
         ]
+    },
+    items: {
+        speed: OBSTACLE_SPEED,
+        spawnMin: 1,
+        spawnMax: 3,
+        spawnTimeout: 1000,
+        types: [{
+                id: "bat",
+            },
+            {
+                id: "boomstick",
+            },
+            {
+                id: "chainsaw",
+            },
+            {
+                id: "corruptedgoo",
+            },
+            {
+                id: "lawnmower",
+            },
+            {
+                id: "nailbomb",
+            },
+            {
+                id: "shovel",
+            },
+            {
+                id: "stapler",
+            },
+            {
+                id: "taintedgoo",
+            },
+            {
+                id: "attack",
+            }
+        ]
     }
 };
 export default Config;
