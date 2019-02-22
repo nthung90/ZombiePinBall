@@ -48,8 +48,8 @@ var Config = {
     obstacles: {
         speed: OBSTACLE_SPEED,
         scale: 0.75,
-        spawnMin: 2,
-        spawnMax: 5,
+        spawnMin: 1,
+        spawnMax: 3,
         types: [{
                 id: "air",
             },
@@ -73,8 +73,8 @@ var Config = {
     items: {
         speed: OBSTACLE_SPEED,
         spawnMin: 1,
-        spawnMax: 3,
-        spawnTimeout: 5000,
+        spawnMax: 2,
+        spawnTimeout: 7000,
         types: [{
                 id: "bat",
             },
@@ -83,9 +83,6 @@ var Config = {
             },
             {
                 id: "chainsaw",
-            },
-            {
-                id: "corruptedgoo",
             },
             {
                 id: "lawnmower",
@@ -100,7 +97,10 @@ var Config = {
                 id: "stapler",
             },
             {
-                id: "taintedgoo",
+                id: "attack",
+            },
+            {
+                id: "attack",
             },
             {
                 id: "attack",

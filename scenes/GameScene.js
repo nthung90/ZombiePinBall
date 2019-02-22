@@ -4,29 +4,36 @@ class GameScene extends Phaser.Scene {
     init() {
         app = this
         this.getZombieCardsData()
+
+        //player        
         this.readyToMove = true
+        this.player
         this.playerScale = Config.PLAYER_SCALE
-        this.playerLifePoint = 100
-        this.playerGooPoint = 0
+        this.playerLifePoint = 20
         this.playerAttack = 0
         this.playerDefense = 0
+
+        //obstacles
         this.spawnObstacleCount = 0
         this.spawnMin = 0
         this.spawnMax = 0
-        this.isGameOver = false
+
+        //set cards
         this.setAirCards = new Set()
         this.setEarthCards = new Set()
         this.setFireCards = new Set()
         this.setLifeCards = new Set()
         this.setToxicCards = new Set()
         this.setWaterCards = new Set()
-        
-        this.timer
 
-        this.opponentLifePoint = 100
-        this.opponentGooPoint = 0
+        //opponent
+        this.opponentLifePoint = 20
         this.opponentAttack = 0
         this.opponentDefense = 0
+
+
+        this.isGameOver = false
+        this.timer
     }
 
     constructor() {
@@ -59,14 +66,12 @@ class GameScene extends Phaser.Scene {
         this.load.image('bat', 'assets/images/bat.png')
         this.load.image('boomstick', 'assets/images/boomstick.png')
         this.load.image('chainsaw', 'assets/images/chainsaw.png')
-        this.load.image('corruptedgoo', 'assets/images/corruptedgoo.png')
         this.load.image('lawnmower', 'assets/images/lawnmower.png')
         this.load.image('nailbomb', 'assets/images/nailbomb.png')
         this.load.image('shovel', 'assets/images/shovel.png')
         this.load.image('stapler', 'assets/images/stapler.png')
-        this.load.image('taintedgoo', 'assets/images/taintedgoo.png')
         this.load.image('attack', 'assets/images/attack.png')
-        this.load.atlas('flares', 'assets/images/flares.png', 'assets/images/flares.json');
+        this.load.atlas('flares', 'assets/images/flares.png', 'assets/images/flares.json')
         // firework images
         this.load.image('blue', 'assets/particles/blue_explode.png')
         this.load.image('green', 'assets/particles/green_explode.png')
@@ -116,22 +121,22 @@ class GameScene extends Phaser.Scene {
                     switch (data.cards[i].set) {
                         case "AIR":
                             app.setAirCards.add(data.cards[i])
-                            break;
+                            break
                         case "EARTH":
                             app.setEarthCards.add(data.cards[i])
-                            break;
+                            break
                         case "FIRE":
                             app.setFireCards.add(data.cards[i])
-                            break;
+                            break
                         case "LIFE":
                             app.setLifeCards.add(data.cards[i])
-                            break;
+                            break
                         case "TOXIC":
                             app.setToxicCards.add(data.cards[i])
-                            break;
+                            break
                         case "WATER":
                             app.setWaterCards.add(data.cards[i])
-                            break;
+                            break
                     }
                 }
             } else {
@@ -186,13 +191,11 @@ class GameScene extends Phaser.Scene {
 
         // player's text view
         this.playerLifeTextView = this.add.text(50, 20, 'Life: ' + this.playerLifePoint, style)
-        this.playerGooTextView = this.add.text(50, 70, 'Goo: 0', style)
         this.playerAttackTextView = this.add.text(370, 20, 'Attack: 0', style)
         this.playerDefenseTextView = this.add.text(370, 70, 'Defense: 0', style)
 
         // opponent text view
         this.opponentLifeTextView = this.add.text(650, 20, 'Life: ' + this.opponentLifePoint, style)
-        this.opponentGooTextView = this.add.text(650, 70, 'Goo: ' , style)
         this.opponentAttackTextView = this.add.text(970, 20, 'Attack: 0', style)
         this.opponentDefenseTextView = this.add.text(970, 70, 'Defense: 0', style)
 
@@ -203,13 +206,12 @@ class GameScene extends Phaser.Scene {
     initPlayer() {
         this.player = this.physics.add.image(Config.BG_WIDTH / 4, 100, 'fire').setDisplaySize(Config.PLAYER_SIZE, Config.PLAYER_SIZE)
         this.player.id = 'fire'
+        this.player.index = 2
         this.player.moveTo = this.plugins.get('rexMoveTo').add(this.player, {
             speed: Config.PLAYER_SPEED,
         }).on('complete', function() {
             app.playerScale = Config.PLAYER_SCALE // reset scale
             app.readyToMove = true
-            app.playerGooPoint++
-            app.playerGooTextView.setText("Goo: " + app.playerGooPoint)
         })
         this.input.on('pointerdown', () => this.playerMove(this.player.y == Config.PLAYER_Y_TOP))
     }
@@ -228,27 +230,26 @@ class GameScene extends Phaser.Scene {
             delay: Config.items.spawnTimeout, // ms
             callback: this.timerItemCallback,
             loop: true
-        });
+        })
     }
 
     timerItemCallback() {
         var n = Phaser.Math.Between(Config.items.spawnMin, Config.items.spawnMax)
         for (var i = 0; i < n; i++) {
             var type = Phaser.Math.Between(0, Config.items.types.length - 1)
-            // app.spawnItem(type, Config.items.speed)
-            app.spawnItem(9, Config.items.speed) // hungnt Test
+            app.spawnItem(type, Config.items.speed)
         }
     }
 
     playerHitObstacle(player, container) {
         this.destroyObstacle(container)
         if (this.player.id != container.id) {
-            this.playerLifePoint -= 10
+            this.playerLifePoint -= container.damage
             this.playerLifeTextView.setText('Life: ' + this.playerLifePoint)
             this.explodeEffect(container, false)
             this.sound.play('break')
         } else {
-            console.log("Got the card!")
+            // console.log("Got the card!")
             this.playerAttack += container.damage
             this.playerAttackTextView.setText("Attack: " + this.playerAttack)
             this.playerDefense += container.health
@@ -270,68 +271,98 @@ class GameScene extends Phaser.Scene {
         this.attackParticle(item)
     }
 
-    attackParticle(item){
-        var path = new Phaser.Curves.Path(this.player.x, this.player.y).lineTo(Config.BG_WIDTH *  0.75, Config.BG_HEIGHT / 2)
+    attackParticle(item) {
+        var path = new Phaser.Curves.Path(this.player.x, this.player.y).lineTo(Config.BG_WIDTH * 0.75, Config.BG_HEIGHT / 2)
         var particles = this.add.particles('flares')
         var attEmitter = particles.createEmitter({
-            frame: { frames: [ 'red', 'green', 'blue' ], cycle: true },
+            frame: { frames: ['red', 'green', 'blue'], cycle: true },
             scale: { start: 0.5, end: 0 },
             lifespan: 700,
             blendMode: 'ADD',
             emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false }
         })
-        this.time.delayedCall(700, function(){
+        this.time.delayedCall(700, function() {
             attEmitter.on = false
-            this.add.particles('blue').createEmitter(Config.Firework).explode(5, Config.BG_WIDTH *  0.75, Config.BG_HEIGHT / 2)
+            this.add.particles('blue').createEmitter(Config.Firework).explode(5, Config.BG_WIDTH * 0.75, Config.BG_HEIGHT / 2)
             this.attackParticleCallback(item)
         }, [], this)
     }
 
-    attackParticleCallback(item){
-        switch(item.id){
+    attackParticleCallback(item) {
+        switch (item.id) {
             case "bat":
-                
-            break
-            // case "boomstick":
-            //     // deal damage to opponent
-            // break;
-            // case "chainsaw":
-            // break;
-            // case "corruptedgoo":
-            // break;
-            // case "lawnmower":
-            // break;
-            // case "nailbomb":
-            // break;
-            // case "shovel":
-            // break;
-            // case "stapler":
-            // break;
-            // case "taintedgoo":
-            // break;
+                // Deal 3 damage to opponent
+                this.updateStats("opponent", "defense", -3)
+                break
+            case "boomstick":
+                // Deal 2 damage to opponent
+                this.updateStats("opponent", "defense", -2)
+                break
+            case "chainsaw":
+                // Add 7 damage to player
+                this.updateStats("player", "attack", 7)
+                break
+            case "lawnmower":
+                // Deal 2 damage to opponent
+                this.updateStats("opponent", "defense", -2)
+                break
+            case "nailbomb":
+                // Deal 5 damage to opponent
+                this.updateStats("opponent", "defense", -5)
+                break
+            case "shovel":
+                // Add 3 defense to player
+                this.updateStats("player", "defense", 3)
+                break
+            case "stapler":
+                // Add 4 defense to player
+                this.updateStats("player", "defense", 4)
+                break
             case "attack":
-                this.opponentDefense = this.playerAttack - this.opponentDefense
-                if(this.opponentDefense < 0){
-                    this.opponentLifePoint += this.opponentDefense
-                    this.opponentDefense = 0
-                }
+                this.updateStats("opponent", "defense", -this.playerAttack)
                 this.playerAttack = 0
                 this.updatePlayerTextView()
-                this.updateOpponentTextView()
-            break
+                break
         }
     }
 
-    updatePlayerTextView(){
+    updateStats(object, type, number) {
+        if (object == "opponent") {
+            if (type == "attack") this.opponentAttack += number
+            if (type == "defense") {
+                this.opponentDefense += number
+                if (this.opponentDefense < 0) {
+                    this.opponentLifePoint += this.opponentDefense
+                    if (this.opponentLifePoint < 0) this.opponentLifePoint = 0
+                    this.opponentDefense = 0
+                }
+            }
+            this.updateOpponentTextView()
+        }
+
+        if (object == "player") {
+            if (type == "attack") this.playerAttack += number
+            if (type == "defense") {
+                this.playerDefense += number
+                if (this.playerDefense < 0) {
+                    this.playerLifePoint += this.playerDefense
+                    if (this.playerLifePoint < 0) this.playerLifePoint = 0
+                    this.playerDefense = 0
+                }
+            }
+            this.updatePlayerTextView()
+        }
+    }
+
+
+    updatePlayerTextView() {
         this.playerLifeTextView.setText('Life: ' + this.playerLifePoint)
-        this.playerGooTextView.setText('Goo: ' + this.playerGooPoint)
         this.playerAttackTextView.setText('Attack: ' + this.playerAttack)
         this.playerDefenseTextView.setText('Defense: ' + this.playerDefense)
     }
 
-    updateOpponentTextView(){
+    updateOpponentTextView() {
         this.opponentLifeTextView.setText('Life: ' + this.opponentLifePoint)
-        this.opponentGooTextView.setText('Goo: ' + this.opponentGooPoint)
         this.opponentAttackTextView.setText('Attack: ' + this.opponentAttack)
         this.opponentDefenseTextView.setText('Defense: ' + this.opponentDefense)
     }
@@ -370,15 +401,13 @@ class GameScene extends Phaser.Scene {
         var card = this.randomCard(type.id)
 
         var damage = this.add.text(-25, 25, "A: " + card.damage, { fontFamily: 'Arial', color: '#ffffff', align: 'center' }).setFontSize(18).setOrigin(0.5, 0.5)
-        var cost = this.add.text(25, 25, "D: " + card.health, { fontFamily: 'Arial', color: '#ffffff', align: 'center' }).setFontSize(18).setOrigin(0.5, 0.5)
-        var health = this.add.text(25, -25, "C: " + card.cost, { fontFamily: 'Arial', color: '#ffffff', align: 'center' }).setFontSize(18).setOrigin(0.5, 0.5)
+        var health = this.add.text(25, 25, "D: " + card.health, { fontFamily: 'Arial', color: '#ffffff', align: 'center' }).setFontSize(18).setOrigin(0.5, 0.5)
 
         var container = this.add.container(x, y).setSize(55, 55)
-        container.add([obstacle, damage, health, cost])
+        container.add([obstacle, damage, health])
         container.id = type.id
         container.damage = card.damage
         container.health = card.health
-        container.cost = card.cost
 
         container.obstacleDir = x < 0 ? "left" : "right"
         this.physics.world.enable(container)
@@ -424,7 +453,7 @@ class GameScene extends Phaser.Scene {
                         break
                     }
                 }
-                break;
+                break
             case "earth":
                 index = Phaser.Math.Between(0, this.setEarthCards.size - 1)
                 count = 0
@@ -434,7 +463,7 @@ class GameScene extends Phaser.Scene {
                         break
                     }
                 }
-                break;
+                break
             case "fire":
                 index = Phaser.Math.Between(0, this.setFireCards.size - 1)
                 count = 0
@@ -444,7 +473,7 @@ class GameScene extends Phaser.Scene {
                         break
                     }
                 }
-                break;
+                break
             case "life":
                 index = Phaser.Math.Between(0, this.setLifeCards.size - 1)
                 count = 0
@@ -454,7 +483,7 @@ class GameScene extends Phaser.Scene {
                         break
                     }
                 }
-                break;
+                break
             case "toxic":
                 index = Phaser.Math.Between(0, this.setToxicCards.size - 1)
                 count = 0
@@ -464,7 +493,7 @@ class GameScene extends Phaser.Scene {
                         break
                     }
                 }
-                break;
+                break
             case "water":
                 index = Phaser.Math.Between(0, this.setWaterCards.size - 1)
                 count = 0
@@ -474,7 +503,7 @@ class GameScene extends Phaser.Scene {
                         break
                     }
                 }
-                break;
+                break
         }
         return card
     }
@@ -483,11 +512,9 @@ class GameScene extends Phaser.Scene {
         // Update camera - debug purpose
         if (this.physics.config.debug) this.controls.update(delta)
         if (!this.isGameOver && this.setAirCards.size > 0) {
-            // update Player
             this.updatePlayer()
-            // update Obstacle
+            this.updateOpponent()
             this.updateObstacle()
-            // update Item
             this.updateItem()
         }
     }
@@ -511,9 +538,11 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    showEndScreen() {
-        this.restartBtn = this.add.image(Config.BG_WIDTH / 2, Config.BG_HEIGHT / 2, 'restart').setOrigin(0.5, 0.5).setInteractive()
-        this.restartBtn.on('pointerdown', () => app.scene.restart())
+    updateOpponent() {
+        if (this.opponentLifePoint <= 0) {
+            this.isGameOver = true
+            this.showEndScreen()
+        }
     }
 
     updateObstacle() {
@@ -524,6 +553,8 @@ class GameScene extends Phaser.Scene {
                 this.spawnObstacle(type, Config.obstacles.speed)
                 this.spawnObstacleCount++
             }
+            this.spawnObstacle(this.player.index, Config.obstacles.speed)
+            this.spawnObstacleCount++
         }
         if (this.obstacles.children.entries.length > 0) {
             this.obstacles.children.iterate(function(obstacle) {
@@ -546,6 +577,15 @@ class GameScene extends Phaser.Scene {
                 }
             })
         }
+    }
+
+    showEndScreen() {
+        if (this.playerLifePoint > 0)
+            this.add.text(Config.BG_WIDTH / 2, 150, 'You Win!', { font: '64px Courier bold', fill: '#ffffff', }).setOrigin(0.5, 0.5)
+        else
+            this.add.text(Config.BG_WIDTH / 2, 150, 'You Lose!', { font: '64px Courier bold', fill: '#ffffff', }).setOrigin(0.5, 0.5)
+        this.restartBtn = this.add.image(Config.BG_WIDTH / 2, Config.BG_HEIGHT / 2, 'restart').setOrigin(0.5, 0.5).setInteractive()
+        this.restartBtn.on('pointerdown', () => app.scene.restart())
     }
 }
 export default GameScene
