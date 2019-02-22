@@ -74,7 +74,7 @@ var Config = {
         speed: OBSTACLE_SPEED,
         spawnMin: 1,
         spawnMax: 3,
-        spawnTimeout: 1000,
+        spawnTimeout: 5000,
         types: [{
                 id: "bat",
             },

@@ -6,12 +6,13 @@ class GameScene extends Phaser.Scene {
         this.getZombieCardsData()
         this.readyToMove = true
         this.playerScale = Config.PLAYER_SCALE
-        this.lifePoint = 100
-        this.gooPoint = 0
+        this.playerLifePoint = 100
+        this.playerGooPoint = 0
+        this.playerAttack = 0
+        this.playerDefense = 0
         this.spawnObstacleCount = 0
         this.spawnMin = 0
         this.spawnMax = 0
-        this.gooPoint = 0
         this.isGameOver = false
         this.setAirCards = new Set()
         this.setEarthCards = new Set()
@@ -19,9 +20,13 @@ class GameScene extends Phaser.Scene {
         this.setLifeCards = new Set()
         this.setToxicCards = new Set()
         this.setWaterCards = new Set()
-        this.playerAttack = 0
-        this.playerDefense = 0
+        
         this.timer
+
+        this.opponentLifePoint = 100
+        this.opponentGooPoint = 0
+        this.opponentAttack = 0
+        this.opponentDefense = 0
     }
 
     constructor() {
@@ -30,7 +35,7 @@ class GameScene extends Phaser.Scene {
             physics: {
                 default: 'arcade',
                 arcade: {
-                    debug: true,
+                    // debug: true,
                     gravity: {
                         y: 0
                     }
@@ -179,10 +184,17 @@ class GameScene extends Phaser.Scene {
         this.add.image(Config.BG_WIDTH / 2, 0, 'background').setOrigin(0, 0).setDisplaySize(Config.BG_WIDTH / 2, Config.BG_HEIGHT)
         var style = { font: '24px Courier bold', fill: '#ffffff' }
 
-        this.lifeTextView = this.add.text(50, 20, 'Life: ' + this.lifePoint, style)
-        this.gooTextView = this.add.text(50, 70, 'Goo: 0', style)
-        this.attackTextView = this.add.text(370, 20, 'Attack: 0', style)
-        this.defenseTextView = this.add.text(370, 70, 'Defense: 0', style)
+        // player's text view
+        this.playerLifeTextView = this.add.text(50, 20, 'Life: ' + this.playerLifePoint, style)
+        this.playerGooTextView = this.add.text(50, 70, 'Goo: 0', style)
+        this.playerAttackTextView = this.add.text(370, 20, 'Attack: 0', style)
+        this.playerDefenseTextView = this.add.text(370, 70, 'Defense: 0', style)
+
+        // opponent text view
+        this.opponentLifeTextView = this.add.text(650, 20, 'Life: ' + this.opponentLifePoint, style)
+        this.opponentGooTextView = this.add.text(650, 70, 'Goo: ' , style)
+        this.opponentAttackTextView = this.add.text(970, 20, 'Attack: 0', style)
+        this.opponentDefenseTextView = this.add.text(970, 70, 'Defense: 0', style)
 
         this.bgSound = this.sound.add('bg_music', { loop: 'true' })
         this.bgSound.play()
@@ -196,8 +208,8 @@ class GameScene extends Phaser.Scene {
         }).on('complete', function() {
             app.playerScale = Config.PLAYER_SCALE // reset scale
             app.readyToMove = true
-            app.gooPoint++
-            app.gooTextView.setText("Goo: " + app.gooPoint)
+            app.playerGooPoint++
+            app.playerGooTextView.setText("Goo: " + app.playerGooPoint)
         })
         this.input.on('pointerdown', () => this.playerMove(this.player.y == Config.PLAYER_Y_TOP))
     }
@@ -231,19 +243,19 @@ class GameScene extends Phaser.Scene {
     playerHitObstacle(player, container) {
         this.destroyObstacle(container)
         if (this.player.id != container.id) {
-            this.lifePoint -= 10
-            this.lifeTextView.setText('Life: ' + this.lifePoint)
+            this.playerLifePoint -= 10
+            this.playerLifeTextView.setText('Life: ' + this.playerLifePoint)
             this.explodeEffect(container, false)
             this.sound.play('break')
         } else {
             console.log("Got the card!")
             this.playerAttack += container.damage
-            this.attackTextView.setText("Attack: " + this.playerAttack)
+            this.playerAttackTextView.setText("Attack: " + this.playerAttack)
             this.playerDefense += container.health
-            this.defenseTextView.setText("Defense: " + this.playerDefense)
+            this.playerDefenseTextView.setText("Defense: " + this.playerDefense)
             this.sound.play('addscore')
         }
-        if (this.lifePoint == 0) {
+        if (this.playerLifePoint == 0) {
             this.isGameOver = true
             this.bgSound.stop()
             this.player.destroy()
@@ -255,11 +267,31 @@ class GameScene extends Phaser.Scene {
     playerHitItem(player, item) {
         item.destroy()
         console.log("got the item " + item.id)
+        this.attackParticle(item)
+    }
+
+    attackParticle(item){
+        var path = new Phaser.Curves.Path(this.player.x, this.player.y).lineTo(Config.BG_WIDTH *  0.75, Config.BG_HEIGHT / 2)
+        var particles = this.add.particles('flares')
+        var attEmitter = particles.createEmitter({
+            frame: { frames: [ 'red', 'green', 'blue' ], cycle: true },
+            scale: { start: 0.5, end: 0 },
+            lifespan: 700,
+            blendMode: 'ADD',
+            emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false }
+        })
+        this.time.delayedCall(700, function(){
+            attEmitter.on = false
+            this.add.particles('blue').createEmitter(Config.Firework).explode(5, Config.BG_WIDTH *  0.75, Config.BG_HEIGHT / 2)
+            this.attackParticleCallback(item)
+        }, [], this)
+    }
+
+    attackParticleCallback(item){
         switch(item.id){
             case "bat":
-                this.playerAttack += 6;
-                this.attackTextView.setText("Attack: " + this.playerAttack)
-            break;
+                
+            break
             // case "boomstick":
             //     // deal damage to opponent
             // break;
@@ -278,26 +310,30 @@ class GameScene extends Phaser.Scene {
             // case "taintedgoo":
             // break;
             case "attack":
-            var path = new Phaser.Curves.Path(this.player.x, this.player.y).lineTo(Config.BG_WIDTH *  0.75, Config.BG_HEIGHT / 2);
-
-            var particles = this.add.particles('flares');
-
-            var attEmitter = particles.createEmitter({
-                frame: { frames: [ 'red', 'green', 'blue' ], cycle: true },
-                scale: { start: 0.5, end: 0 },
-                lifespan: 700,
-                blendMode: 'ADD',
-                emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false }
-            });
-            this.time.delayedCall(700, function(){
-                attEmitter.on = false;
-            }, [], this);
-            break;
+                this.opponentDefense = this.playerAttack - this.opponentDefense
+                if(this.opponentDefense < 0){
+                    this.opponentLifePoint += this.opponentDefense
+                    this.opponentDefense = 0
+                }
+                this.playerAttack = 0
+                this.updatePlayerTextView()
+                this.updateOpponentTextView()
+            break
         }
     }
 
-    attackEmitterCallback(){
-        app.particles.destroy()
+    updatePlayerTextView(){
+        this.playerLifeTextView.setText('Life: ' + this.playerLifePoint)
+        this.playerGooTextView.setText('Goo: ' + this.playerGooPoint)
+        this.playerAttackTextView.setText('Attack: ' + this.playerAttack)
+        this.playerDefenseTextView.setText('Defense: ' + this.playerDefense)
+    }
+
+    updateOpponentTextView(){
+        this.opponentLifeTextView.setText('Life: ' + this.opponentLifePoint)
+        this.opponentGooTextView.setText('Goo: ' + this.opponentGooPoint)
+        this.opponentAttackTextView.setText('Attack: ' + this.opponentAttack)
+        this.opponentDefenseTextView.setText('Defense: ' + this.opponentDefense)
     }
 
     destroyObstacle(obj) {
@@ -373,19 +409,6 @@ class GameScene extends Phaser.Scene {
 
         item.itemDir = item.x < 0 ? "left" : "right"
         item.body.velocity.x = item.x < 0 ? speed : -speed
-
-        // Create follow emitter
-        // var emitter = this.add.particles(type.id).createEmitter({
-        //     speed: 100,
-        //     scale: {
-        //         start: 1,
-        //         end: 0
-        //     },
-        //     blendMode: 'ADD',
-        //     maxParticles: 5,
-        //     lifespan: 500
-        // })
-        // emitter.startFollow(item, 0, 0, true)
         this.items.add(item)
     }
 
@@ -463,7 +486,7 @@ class GameScene extends Phaser.Scene {
             // update Player
             this.updatePlayer()
             // update Obstacle
-            // this.updateObstacle()
+            this.updateObstacle()
             // update Item
             this.updateItem()
         }
@@ -471,11 +494,11 @@ class GameScene extends Phaser.Scene {
 
     updatePlayer() {
         // Scale player by time
-        // if ((this.player.y == Config.PLAYER_Y_TOP || this.player.y == Config.PLAYER_Y_DOWN) && this.playerScale != -1) {
-        //     this.playerScale += 0.005
-        //     this.playerScale = this.playerScale > Config.PLAYER_MAX_SCALE ? Config.PLAYER_MAX_SCALE : this.playerScale
-        //     this.player.setScale(this.playerScale)
-        // }
+        if ((this.player.y == Config.PLAYER_Y_TOP || this.player.y == Config.PLAYER_Y_DOWN) && this.playerScale != -1) {
+            this.playerScale += 0.005
+            this.playerScale = this.playerScale > Config.PLAYER_MAX_SCALE ? Config.PLAYER_MAX_SCALE : this.playerScale
+            this.player.setScale(this.playerScale)
+        }
         // Destroy player when player is too big
         if (this.playerScale == Config.PLAYER_MAX_SCALE && this.isGameOver == false) {
             //destroy old obstacles
