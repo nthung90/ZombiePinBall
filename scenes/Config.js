@@ -4,7 +4,7 @@ var HEIGHT = 800;
 var Config = {
     BG_WIDTH: WIDTH,
     BG_HEIGHT: HEIGHT,
-    PLAYER_X: WIDTH / 2,
+    PLAYER_X: WIDTH / 4,
     PLAYER_Y_TOP: 100,
     PLAYER_Y_DOWN: HEIGHT - 100,
     PLAYER_SIZE: 73,
@@ -74,7 +74,7 @@ var Config = {
         speed: OBSTACLE_SPEED,
         spawnMin: 1,
         spawnMax: 2,
-        spawnTimeout: 7000,
+        spawnTimeout: 5000,
         types: [{
                 id: "bat",
             },
