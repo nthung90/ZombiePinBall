@@ -6,12 +6,10 @@ class GameScene extends Phaser.Scene {
         this.getZombieCardsData()
         this.player
         this.opponent
-
         //obstacles
         this.spawnObstacleCount = 0
         this.spawnMin = 0
         this.spawnMax = 0
-
         //set cards
         this.setAirCards = new Set()
         this.setEarthCards = new Set()
@@ -21,7 +19,6 @@ class GameScene extends Phaser.Scene {
         this.setWaterCards = new Set()
         this.isGameOver = false
     }
-
     constructor() {
         super({
             key: 'GameScene',
@@ -36,7 +33,6 @@ class GameScene extends Phaser.Scene {
             }
         })
     }
-
     preload() {
         this.load.image('background', 'assets/images/border_background.png')
         //player + obstacle
@@ -46,7 +42,6 @@ class GameScene extends Phaser.Scene {
         this.load.image('life', 'assets/images/life.png')
         this.load.image('toxic', 'assets/images/toxic.png')
         this.load.image('water', 'assets/images/water.png')
-
         //item
         this.load.image('item', 'assets/images/item.png')
         this.load.image('bat', 'assets/images/bat.png')
@@ -73,28 +68,22 @@ class GameScene extends Phaser.Scene {
         this.load.audio('addscore', 'assets/sounds/addscore.mp3')
         this.load.image('restart', 'assets/images/restart.png')
     }
-
     create() {
         this.showCameraControl()
         this.initBackground()
-
         // init Player and Opponent
         var index = Phaser.Math.Between(0, Config.obstacles.types.length - 1)
         this.player = this.physics.add.image(Config.BG_WIDTH / 4, 100, Config.obstacles.types[index].id).setDisplaySize(Config.PLAYER_SIZE, Config.PLAYER_SIZE)
         this.player.name = "player"
         this.initObject(this.player, index)
-
         index = Phaser.Math.Between(0, Config.obstacles.types.length - 1)
         this.opponent = this.physics.add.image(Config.BG_WIDTH * 0.75, 100, Config.obstacles.types[index].id).setDisplaySize(Config.PLAYER_SIZE, Config.PLAYER_SIZE)
         this.opponent.name = "opponent"
         this.initObject(this.opponent, index)
-
         this.updatePlayerTextView()
         this.updateOpponentTextView()
-
         this.initObstacle()
         this.initItem()
-
         this.guideTextView = this.add.text(50, 150, 'Tap to move. \nAvoid obstacles. \nKeep moving!', {
             font: '64px Courier bold',
             fill: '#ffffff'
@@ -107,10 +96,8 @@ class GameScene extends Phaser.Scene {
             repeat: 0,
             yoyo: false
         })
-
         this.input.on('pointerdown', () => this.playerMove(this.player.y == Config.PLAYER_Y_TOP))
     }
-
     getZombieCardsData() {
         var request = new XMLHttpRequest()
         request.open('GET', 'https://api.loom.games/zb/v1/cards', true)
@@ -152,7 +139,6 @@ class GameScene extends Phaser.Scene {
         }
         request.send()
     }
-
     showCameraControl() {
         if (this.physics.config.debug) {
             this.add.text(0, 0, 'Use Cursors to scroll camera.\nQ / E to zoom in and out', {
@@ -175,7 +161,6 @@ class GameScene extends Phaser.Scene {
             this.controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig)
         }
     }
-
     initBackground() {
         // create rotate grid background
         var grid = this.add.grid(Config.BG_WIDTH / 2, Config.BG_HEIGHT / 2, Config.GRID_WIDTH, Config.GRID_WIDTH, Config.GRID_CELLWIDTH, Config.GRID_CELLWIDTH, 0x141428, 0.5, 0x333333, 1)
@@ -189,22 +174,23 @@ class GameScene extends Phaser.Scene {
         })
         this.add.image(0, 0, 'background').setOrigin(0, 0).setDisplaySize(Config.BG_WIDTH / 2, Config.BG_HEIGHT)
         this.add.image(Config.BG_WIDTH / 2, 0, 'background').setOrigin(0, 0).setDisplaySize(Config.BG_WIDTH / 2, Config.BG_HEIGHT)
-        var style = { font: '24px Courier bold', fill: '#ffffff' }
-
+        var style = {
+            font: '24px Courier bold',
+            fill: '#ffffff'
+        }
         // player's text view
         this.playerLifeTextView = this.add.text(50, 20, 'Life: 0', style)
         this.playerAttackTextView = this.add.text(370, 20, 'Attack: 0', style)
         this.playerDefenseTextView = this.add.text(370, 70, 'Defense: 0', style)
-
         // opponent text view
         this.opponentLifeTextView = this.add.text(650, 20, 'Life: 0', style)
         this.opponentAttackTextView = this.add.text(970, 20, 'Attack: 0', style)
         this.opponentDefenseTextView = this.add.text(970, 70, 'Defense: 0', style)
-
-        this.bgSound = this.sound.add('bg_music', { loop: 'true' })
+        this.bgSound = this.sound.add('bg_music', {
+            loop: 'true'
+        })
         this.bgSound.play()
     }
-
     initObject(object, index) {
         object.id = Config.obstacles.types[index].id
         object.index = index
@@ -213,7 +199,6 @@ class GameScene extends Phaser.Scene {
         object.LifePoint = 20
         object.Attack = 0
         object.Defense = 0
-
         object.moveTo = this.plugins.get('rexMoveTo').add(object, {
             speed: Config.PLAYER_SPEED,
         }).on('complete', function() {
@@ -221,18 +206,16 @@ class GameScene extends Phaser.Scene {
             object.ReadyToMove = true
         })
     }
-
     initObstacle() {
         this.obstacles = this.add.group()
         this.obstacles.enableBody = true
         this.physics.add.overlap(this.player, this.obstacles, this.objectHitObstacle, null, this)
         this.physics.add.overlap(this.opponent, this.obstacles, this.objectHitObstacle, null, this)
     }
-
     initItem() {
         this.items = this.add.group()
         this.items.enableBody = true
-        // this.physics.add.overlap(this.player, this.items, this.playerHitItem, null, this)
+        this.physics.add.overlap(this.player, this.items, this.objectHitItem, null, this)
         this.physics.add.overlap(this.opponent, this.items, this.objectHitItem, null, this)
         this.time.addEvent({
             delay: Config.items.spawnTimeout, // ms
@@ -240,12 +223,10 @@ class GameScene extends Phaser.Scene {
             loop: true
         })
     }
-
     timerItemCallback() {
         var n = Phaser.Math.Between(Config.items.spawnMin, Config.items.spawnMax)
         for (var i = 0; i < n; i++) app.spawnItem(Phaser.Math.Between(0, Config.items.types.length - 1), Config.items.speed)
     }
-
     objectHitObstacle(object, container) {
         this.destroyObstacle(container)
         if (object.id != container.id) {
@@ -256,29 +237,23 @@ class GameScene extends Phaser.Scene {
                 object.Defense = 0
             }
             if (object.name == "player") {
-                this.playerLifeTextView.setText('Life: ' + object.LifePoint)
+                this.updatePlayerTextView()
                 this.sound.play('break')
-            } else
-                this.opponentLifeTextView.setText('Life: ' + object.LifePoint)
+            } else this.updateOpponentTextView()
             this.explodeEffect(container, false)
         } else {
             // console.log("Got the card!")
             object.Attack += container.damage
             object.Defense += container.health
             if (object.name == "player") {
-                this.playerAttackTextView.setText("Attack: " + object.Attack)
-                this.playerDefenseTextView.setText("Defense: " + object.Defense)
+                this.updatePlayerTextView()
                 this.sound.play('addscore')
-            } else {
-                this.opponentAttackTextView.setText("Attack: " + object.Attack)
-                this.opponentDefenseTextView.setText("Defense: " + object.Defense)
-            }
+            } else this.updateOpponentTextView()
         }
     }
-
     objectHitItem(object, item) {
         item.destroy()
-        console.log("got the item " + item.id)
+        // console.log("got the item " + item.id)
         var msg
         switch (item.id) {
             case "bat":
@@ -291,6 +266,8 @@ class GameScene extends Phaser.Scene {
                 break
             case "chainsaw":
                 msg = "Add 7 damage to player"
+                if (object.name == "player") this.updateStats("player", "attack", 7)
+                else this.updateStats("opponent", "attack", 7)
                 break
             case "lawnmower":
                 msg = "Deal 2 damage to opponent"
@@ -302,93 +279,72 @@ class GameScene extends Phaser.Scene {
                 break
             case "shovel":
                 msg = "Add 3 defense to player"
+                if (object.name == "player") this.updateStats("player", "defense", 3)
+                else this.updateStats("opponent", "defense", 3)
                 break
             case "stapler":
                 msg = "Add 4 defense to player"
+                if (object.name == "player") this.updateStats("player", "defense", 4)
+                else this.updateStats("opponent", "defense", 4)
                 break
             case "attack":
                 msg = "Attack!"
                 this.attackParticle(object, item)
                 break
         }
-        if (object.name == "player")
-            this.createSpeechBubble(Config.BG_WIDTH / 4 + 25, 730, 250, 50, msg)
-        else
-            this.createSpeechBubble(Config.BG_WIDTH * 0.75 + 25, 730, 250, 50, msg)
+        if (object.name == "player") this.createSpeechBubble(Config.BG_WIDTH / 4 + 25, 730, 250, 50, msg)
+        else this.createSpeechBubble(Config.BG_WIDTH * 0.75 + 25, 730, 250, 50, msg)
     }
-
     attackParticle(object, item) {
         var path
-        if (object.name == "player")
-            path = new Phaser.Curves.Path(object.x, object.y).lineTo(Config.BG_WIDTH * 0.75, Config.BG_HEIGHT / 2)
-        else
-            path = new Phaser.Curves.Path(object.x, object.y).lineTo(Config.BG_WIDTH / 4, Config.BG_HEIGHT / 2)
+        if (object.name == "player") path = new Phaser.Curves.Path(object.x, object.y).lineTo(Config.BG_WIDTH * 0.75, Config.BG_HEIGHT / 2)
+        else path = new Phaser.Curves.Path(object.x, object.y).lineTo(Config.BG_WIDTH / 4, Config.BG_HEIGHT / 2)
         var particles = this.add.particles('flares')
         var attEmitter = particles.createEmitter({
-            frame: { frames: ['red', 'green', 'blue'], cycle: true },
-            scale: { start: 0.5, end: 0 },
+            frame: {
+                frames: ['red', 'green', 'blue'],
+                cycle: true
+            },
+            scale: {
+                start: 0.5,
+                end: 0
+            },
             lifespan: 700,
             blendMode: 'ADD',
-            emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false }
+            emitZone: {
+                type: 'edge',
+                source: path,
+                quantity: 48,
+                yoyo: false
+            }
         })
-
         this.time.delayedCall(700, function() {
             attEmitter.on = false
             this.add.particles('blue').createEmitter(Config.Firework).explode(5, Config.BG_WIDTH * 0.75, Config.BG_HEIGHT / 2)
             this.attackParticleCallback(object, item)
         }, [], this)
     }
-
     attackParticleCallback(object, item) {
         switch (item.id) {
             case "bat":
                 // Deal 3 damage to opponent
-                if (object.name == "player")
-                    this.updateStats("opponent", "defense", -3)
-                else
-                    this.updateStats("player", "defense", -3)
+                if (object.name == "player") this.updateStats("opponent", "defense", -3)
+                else this.updateStats("player", "defense", -3)
                 break
             case "boomstick":
                 // Deal 2 damage to opponent
-                if (object.name == "player")
-                    this.updateStats("opponent", "defense", -2)
-                else
-                    this.updateStats("player", "defense", -2)
-                break
-            case "chainsaw":
-                // Add 7 damage to player
-                if (object.name == "player")
-                    this.updateStats("player", "attack", 7)
-                else
-                    this.updateStats("opponent", "attack", 7)
+                if (object.name == "player") this.updateStats("opponent", "defense", -2)
+                else this.updateStats("player", "defense", -2)
                 break
             case "lawnmower":
                 // Deal 2 damage to opponent
-                if (object.name == "player")
-                    this.updateStats("opponent", "defense", -2)
-                else
-                    this.updateStats("player", "defense", -2)
+                if (object.name == "player") this.updateStats("opponent", "defense", -2)
+                else this.updateStats("player", "defense", -2)
                 break
             case "nailbomb":
                 // Deal 5 damage to opponent
-                if (object.name == "player")
-                    this.updateStats("opponent", "defense", -5)
-                else
-                    this.updateStats("player", "defense", -5)
-                break
-            case "shovel":
-                // Add 3 defense to player
-                if (object.name == "player")
-                    this.updateStats("player", "defense", 3)
-                else
-                    this.updateStats("opponent", "defense", 3)
-                break
-            case "stapler":
-                // Add 4 defense to player
-                if (object.name == "player")
-                    this.updateStats("player", "defense", 4)
-                else
-                    this.updateStats("opponent", "defense", 4)
+                if (object.name == "player") this.updateStats("opponent", "defense", -5)
+                else this.updateStats("player", "defense", -5)
                 break
             case "attack":
                 if (object.name == "player") {
@@ -403,29 +359,25 @@ class GameScene extends Phaser.Scene {
                 break
         }
     }
-
     createSpeechBubble(x, y, width, height, quote) {
         var bubbleWidth = width;
         var bubbleHeight = height;
         var bubblePadding = 10;
         var arrowHeight = bubbleHeight / 4;
-
-        var bubble = this.add.graphics({ x: x, y: y });
-
+        var bubble = this.add.graphics({
+            x: x,
+            y: y
+        });
         //  Bubble shadow
         bubble.fillStyle(0x222222, 0.5);
         bubble.fillRoundedRect(6, 6, bubbleWidth, bubbleHeight, 16);
-
         //  Bubble color
         bubble.fillStyle(0xffffff, 1);
-
         //  Bubble outline line style
         bubble.lineStyle(4, 0x565656, 1);
-
         //  Bubble shape and outline
         bubble.strokeRoundedRect(0, 0, bubbleWidth, bubbleHeight, 16);
         bubble.fillRoundedRect(0, 0, bubbleWidth, bubbleHeight, 16);
-
         //  Calculate arrow coordinates
         var point1X = Math.floor(bubbleWidth / 7);
         var point1Y = bubbleHeight;
@@ -433,29 +385,30 @@ class GameScene extends Phaser.Scene {
         var point2Y = bubbleHeight;
         var point3X = Math.floor(bubbleWidth / 7);
         var point3Y = Math.floor(bubbleHeight + arrowHeight);
-
         //  Bubble arrow shadow
         bubble.lineStyle(4, 0x222222, 0.5);
         bubble.lineBetween(point2X - 1, point2Y + 6, point3X + 2, point3Y);
-
         //  Bubble arrow fill
         bubble.fillTriangle(point1X, point1Y, point2X, point2Y, point3X, point3Y);
         bubble.lineStyle(2, 0x565656, 1);
         bubble.lineBetween(point2X, point2Y, point3X, point3Y);
         bubble.lineBetween(point1X, point1Y, point3X, point3Y);
-
-        var content = this.add.text(0, 0, quote, { fontFamily: 'Arial', fontSize: 20, color: '#000000', align: 'center', wordWrap: { width: bubbleWidth - (bubblePadding * 2) } });
-
+        var content = this.add.text(0, 0, quote, {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            color: '#000000',
+            align: 'center',
+            wordWrap: {
+                width: bubbleWidth - (bubblePadding * 2)
+            }
+        });
         var b = content.getBounds();
-
         content.setPosition(bubble.x + (bubbleWidth / 2) - (b.width / 2), bubble.y + (bubbleHeight / 2) - (b.height / 2));
-
         this.time.delayedCall(3000, function() {
             content.destroy()
             bubble.clear()
         }, [], this)
     }
-
     updateStats(object, type, number) {
         if (object == "opponent") {
             if (type == "attack") this.opponent.Attack += number
@@ -469,7 +422,6 @@ class GameScene extends Phaser.Scene {
             }
             this.updateOpponentTextView()
         }
-
         if (object == "player") {
             if (type == "attack") this.player.Attack += number
             if (type == "defense") {
@@ -483,25 +435,20 @@ class GameScene extends Phaser.Scene {
             this.updatePlayerTextView()
         }
     }
-
-
     updatePlayerTextView() {
         this.playerLifeTextView.setText('Life: ' + this.player.LifePoint)
         this.playerAttackTextView.setText('Attack: ' + this.player.Attack)
         this.playerDefenseTextView.setText('Defense: ' + this.player.Defense)
     }
-
     updateOpponentTextView() {
         this.opponentLifeTextView.setText('Life: ' + this.opponent.LifePoint)
         this.opponentAttackTextView.setText('Attack: ' + this.opponent.Attack)
         this.opponentDefenseTextView.setText('Defense: ' + this.opponent.Defense)
     }
-
     destroyObstacle(obj) {
         obj.destroy()
         this.spawnObstacleCount--
     }
-
     explodeEffect(target, isPlayer) {
         Config.Firework.scale.start = !isPlayer ? 1 : 3
         this.add.particles('blue').createEmitter(Config.Firework).explode(5, target.x, target.y)
@@ -513,20 +460,17 @@ class GameScene extends Phaser.Scene {
         this.add.particles('white').createEmitter(Config.Firework).explode(5, target.x, target.y)
         this.add.particles('yellow').createEmitter(Config.Firework).explode(5, target.x, target.y)
     }
-
     playerMove(isMoveDown) {
         if (this.player.ReadyToMove == false) return
         this.player.ReadyToMove = false
         this.sound.play('touch')
         this.player.moveTo.moveTo(Config.PLAYER_X, isMoveDown ? Config.PLAYER_Y_DOWN : Config.PLAYER_Y_TOP)
     }
-
     opponentMove(isMoveDown) {
         if (this.opponent.ReadyToMove == false) return
         this.opponent.ReadyToMove = false
         this.opponent.moveTo.moveTo(Config.PLAYER_X * 3, isMoveDown ? Config.PLAYER_Y_DOWN : Config.PLAYER_Y_TOP)
     }
-
     spawnObstacle(val, speed) {
         var type = Config.obstacles.types[val]
         // Random Obstacle x and y        
@@ -535,20 +479,24 @@ class GameScene extends Phaser.Scene {
         var y = Phaser.Math.FloatBetween(250, Config.BG_HEIGHT - 250)
         obstacle.setScale(Config.obstacles.scale)
         var card = this.randomCard(type.id)
-
-        var damage = this.add.text(-25, 25, "A: " + card.damage, { fontFamily: 'Arial', color: '#ffffff', align: 'center' }).setFontSize(18).setOrigin(0.5, 0.5)
-        var health = this.add.text(25, 25, "D: " + card.health, { fontFamily: 'Arial', color: '#ffffff', align: 'center' }).setFontSize(18).setOrigin(0.5, 0.5)
-
+        var damage = this.add.text(-25, 25, "A: " + card.damage, {
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        }).setFontSize(18).setOrigin(0.5, 0.5)
+        var health = this.add.text(25, 25, "D: " + card.health, {
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        }).setFontSize(18).setOrigin(0.5, 0.5)
         var container = this.add.container(x, y).setSize(55, 55)
         container.add([obstacle, damage, health])
         container.id = type.id
         container.damage = card.damage
         container.health = card.health
-
         container.obstacleDir = x < 0 ? "left" : "right"
         this.physics.world.enable(container)
         container.body.velocity.x = x < 0 ? speed : -speed
-
         // Create follow emitter
         var emitter = this.add.particles(type.id).createEmitter({
             speed: 100,
@@ -563,7 +511,6 @@ class GameScene extends Phaser.Scene {
         emitter.startFollow(container, 0, 0, true)
         this.obstacles.add(container)
     }
-
     spawnItem(val, speed) {
         var type = Config.items.types[val]
         // Random item x and y        
@@ -571,12 +518,10 @@ class GameScene extends Phaser.Scene {
         item.x = Math.random() > 0.5 ? Phaser.Math.FloatBetween(-500, -200) : Phaser.Math.FloatBetween(Config.BG_WIDTH + 200, Config.BG_WIDTH + 500) // random left/right item
         item.y = Phaser.Math.FloatBetween(250, Config.BG_HEIGHT - 250)
         item.id = type.id
-
         item.itemDir = item.x < 0 ? "left" : "right"
         item.body.velocity.x = item.x < 0 ? speed : -speed
         this.items.add(item)
     }
-
     randomCard(type) {
         var card, index, count
         count = 0
@@ -638,44 +583,48 @@ class GameScene extends Phaser.Scene {
         }
         return card
     }
-
     update(time, delta) {
         // Update camera - debug purpose
         if (this.physics.config.debug) this.controls.update(delta)
-
         // Start game after got data from server
         if (!this.isGameOver && this.setAirCards.size > 0) {
             this.updateObject(this.player)
             this.updateObject(this.opponent)
-            this.opponentAutoMove()
+            this.updateopponentAutoMove()
             this.updateObstacle()
             this.updateItem()
         }
     }
-
-    opponentAutoMove() {
-        if (this.isGameOver) return;
+    updateopponentAutoMove() {
+        if (this.opponent.Scale >= Config.PLAYER_MAX_SCALE - 0.1) {
+            this.opponentMove(this.opponent.y == Config.PLAYER_Y_TOP)
+            return
+        }
         var isOpponentOkToMove = true
         if (this.obstacles.children.entries.length > 0) {
             this.obstacles.children.iterate(function(obstacle) {
-                if (obstacle && ((obstacle.obstacleDir == "left" && obstacle.body.x > Config.BG_WIDTH * 0.75) ||
-                        (obstacle.obstacleDir == "right" && obstacle.body.x <= Config.BG_WIDTH * 0.75)))
-                    isOpponentOkToMove = true
-                else
-                    isOpponentOkToMove = false
+                // easy mode
+                if (obstacle && obstacle.id != app.opponent.id && ((obstacle.obstacleDir == "left" && obstacle.body.x > Config.BG_WIDTH * 0.75) || (obstacle.obstacleDir == "right" && obstacle.body.x <= Config.BG_WIDTH * 0.75))) isOpponentOkToMove = true
+                else isOpponentOkToMove = false
+
+                // hard mode
+                // if(obstacle && obstacle.id != app.opponent.id){
+                //     if(obstacle.obstacleDir == "left"){
+                //         if(obstacle.body.x > app.opponent.x)
+                //             isOpponentOkToMove = true
+                //     }
+                // }
             })
         }
         if (isOpponentOkToMove) this.opponentMove(this.opponent.y == Config.PLAYER_Y_TOP)
     }
-
     updateObject(object) {
         // Scale player by time
-        // if ((object.y == Config.PLAYER_Y_TOP || object.y == Config.PLAYER_Y_DOWN) && object.Scale != -1) {
-        //     object.Scale += 0.005
-        //     object.Scale = object.Scale > Config.PLAYER_MAX_SCALE ? Config.PLAYER_MAX_SCALE : object.Scale
-        //     object.setScale(object.Scale)
-        // }
-
+        if ((object.y == Config.PLAYER_Y_TOP || object.y == Config.PLAYER_Y_DOWN) && object.Scale != -1) {
+            object.Scale += 0.005
+            object.Scale = object.Scale > Config.PLAYER_MAX_SCALE ? Config.PLAYER_MAX_SCALE : object.Scale
+            object.setScale(object.Scale)
+        }
         // Destroy object when object is too big or LifePoint equal 0
         if ((object.LifePoint <= 0 || object.Scale == Config.PLAYER_MAX_SCALE) && this.isGameOver == false) {
             // Destroy old obstacles
@@ -686,7 +635,6 @@ class GameScene extends Phaser.Scene {
             this.showEndScreen()
         }
     }
-
     updateObstacle() {
         if (this.spawnObstacleCount < Config.obstacles.spawnMin) {
             var n = Phaser.Math.Between(Config.obstacles.spawnMin, Config.obstacles.spawnMax)
@@ -698,7 +646,6 @@ class GameScene extends Phaser.Scene {
             this.spawnObstacle(this.player.index, Config.obstacles.speed)
             this.spawnObstacleCount++
         }
-
         if (this.obstacles.children.entries.length > 0) {
             this.obstacles.children.iterate(function(obstacle) {
                 // Left obstacle collide right boundary or right obstacle collide left boundary
@@ -710,23 +657,24 @@ class GameScene extends Phaser.Scene {
             })
         }
     }
-
     updateItem() {
         if (this.items.children.entries.length > 0) {
             this.items.children.iterate(function(item) {
                 // Left item collide right boundary or right item collide left boundary
-                if (item && ((item.body.x > Config.BG_WIDTH && item.itemDir == "left") || (item.body.x < 0 && item.itemDir == "right")))
-                    item.destroy()
+                if (item && ((item.body.x > Config.BG_WIDTH && item.itemDir == "left") || (item.body.x < 0 && item.itemDir == "right"))) item.destroy()
             })
         }
     }
-
     showEndScreen() {
         this.isGameOver = true
-        if (this.player.LifePoint > 0)
-            this.add.text(Config.BG_WIDTH / 2, 150, 'You Win!', { font: '64px Courier bold', fill: '#ffffff', }).setOrigin(0.5, 0.5)
-        else
-            this.add.text(Config.BG_WIDTH / 2, 150, 'You Lose!', { font: '64px Courier bold', fill: '#ffffff', }).setOrigin(0.5, 0.5)
+        if (this.player.LifePoint > 0) this.add.text(Config.BG_WIDTH / 2, 150, 'You Win!', {
+            font: '64px Courier bold',
+            fill: '#ffffff',
+        }).setOrigin(0.5, 0.5)
+        else this.add.text(Config.BG_WIDTH / 2, 150, 'You Lose!', {
+            font: '64px Courier bold',
+            fill: '#ffffff',
+        }).setOrigin(0.5, 0.5)
         this.restartBtn = this.add.image(Config.BG_WIDTH / 2, Config.BG_HEIGHT / 2, 'restart').setOrigin(0.5, 0.5).setInteractive()
         this.restartBtn.on('pointerdown', () => app.scene.restart())
     }
