@@ -12,7 +12,7 @@ var Config = {
     PLAYER_MAX_SCALE: 1.5,
     GRID_WIDTH: 1500,
     GRID_CELLWIDTH: 64,
-    PLAYER_SPEED: 600,
+    PLAYER_SPEED: 500,
     Firework: {
         x: 400,
         y: 300,
@@ -74,7 +74,7 @@ var Config = {
         speed: OBSTACLE_SPEED,
         spawnMin: 1,
         spawnMax: 2,
-        spawnTimeout: 5000,
+        spawnTimeout: 3000,
         types: [{
                 id: "bat",
             },
@@ -95,6 +95,12 @@ var Config = {
             },
             {
                 id: "stapler",
+            },
+            {
+                id: "attack",
+            },
+            {
+                id: "attack",
             },
             {
                 id: "attack",

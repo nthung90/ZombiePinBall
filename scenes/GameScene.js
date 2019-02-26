@@ -201,6 +201,7 @@ class GameScene extends Phaser.Scene {
         object.Defense = 0
         object.moveTo = this.plugins.get('rexMoveTo').add(object, {
             speed: Config.PLAYER_SPEED,
+            // speed: Config.obstacles.speed,
         }).on('complete', function() {
             object.Scale = Config.PLAYER_SCALE // reset scale
             object.ReadyToMove = true
@@ -596,6 +597,7 @@ class GameScene extends Phaser.Scene {
         }
     }
     updateopponentAutoMove() {
+        if(!this.opponent.ReadyToMove)  return
         if (this.opponent.Scale >= Config.PLAYER_MAX_SCALE - 0.1) {
             this.opponentMove(this.opponent.y == Config.PLAYER_Y_TOP)
             return
@@ -604,16 +606,24 @@ class GameScene extends Phaser.Scene {
         if (this.obstacles.children.entries.length > 0) {
             this.obstacles.children.iterate(function(obstacle) {
                 // easy mode
-                if (obstacle && obstacle.id != app.opponent.id && ((obstacle.obstacleDir == "left" && obstacle.body.x > Config.BG_WIDTH * 0.75) || (obstacle.obstacleDir == "right" && obstacle.body.x <= Config.BG_WIDTH * 0.75))) isOpponentOkToMove = true
-                else isOpponentOkToMove = false
-
+                // if (obstacle && obstacle.id != app.opponent.id && ((obstacle.obstacleDir == "left" && obstacle.body.x > Config.BG_WIDTH * 0.75) || (obstacle.obstacleDir == "right" && obstacle.body.x <= Config.BG_WIDTH * 0.75))) isOpponentOkToMove = true
+                // else isOpponentOkToMove = false
                 // hard mode
-                // if(obstacle && obstacle.id != app.opponent.id){
-                //     if(obstacle.obstacleDir == "left"){
-                //         if(obstacle.body.x > app.opponent.x)
-                //             isOpponentOkToMove = true
-                //     }
-                // }
+                if (obstacle && obstacle.id != app.opponent.id) {
+                    var distance, distance_min, distance_max
+                    var distance = Phaser.Math.Difference(obstacle.body.y, app.opponent.y)
+                    if (obstacle.obstacleDir == "left") {
+                        // distance_max = (Config.BG_WIDTH * 0.75 - distance) + (Config.PLAYER_SIZE * app.opponent.Scale)
+                        // distance_min = (Config.BG_WIDTH * 0.75 - distance) - (Config.PLAYER_SIZE * app.opponent.Scale)
+                        distance_max = (Config.BG_WIDTH * 0.75 - distance) + 200 // 200 is magic number
+                        distance_min = (Config.BG_WIDTH * 0.75 - distance) - 200
+                    }
+                    if (obstacle.obstacleDir == "right") {
+                        distance_max = (Config.BG_WIDTH * 0.75 + distance) + 200
+                        distance_min = (Config.BG_WIDTH * 0.75 + distance) - 200
+                    }
+                    if (obstacle.body.x >= distance_min && obstacle.body.x <= distance_max) isOpponentOkToMove = false
+                }
             })
         }
         if (isOpponentOkToMove) this.opponentMove(this.opponent.y == Config.PLAYER_Y_TOP)
@@ -644,6 +654,8 @@ class GameScene extends Phaser.Scene {
                 this.spawnObstacleCount++
             }
             this.spawnObstacle(this.player.index, Config.obstacles.speed)
+            this.spawnObstacleCount++
+            this.spawnObstacle(this.opponent.index, Config.obstacles.speed)
             this.spawnObstacleCount++
         }
         if (this.obstacles.children.entries.length > 0) {
