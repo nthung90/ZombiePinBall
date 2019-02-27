@@ -1,6 +1,6 @@
-# Phaser 3 Webpack Project Template
+# Zombie Pinball project
 
-A Phaser 3 Project Template
+Phaser game
 
 ### Requirements
 
